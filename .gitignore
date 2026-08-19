@@ -1,7 +1,13 @@
-# Local secrets and environments
+# Local secrets and environments — never commit these.
 .env
 .env.*
 !.env.example
+*.pem
+*.key
+id_rsa
+id_rsa.pub
+credentials.json
+secrets.json
 
 # Python
 .venv/

@@ -9,8 +9,12 @@ wheels/
 # Virtual environments
 .venv
 
-# Local configuration
+# Local configuration — real secrets live here, not in git.
 .env
+.env.*
+!.env.example
+*.pem
+*.key
 
 # Tooling caches
 .pytest_cache/
