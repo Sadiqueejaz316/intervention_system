@@ -1,0 +1,26 @@
+# Local secrets and environments
+.env
+.env.*
+!.env.example
+
+# Python
+.venv/
+venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+
+# Node
+node_modules/
+dist/
+
+# Playwright
+test-results/
+playwright-report/
+.screenshots/
+
+# Editors
+.idea/
+.vscode/
+*.sw?
+.DS_Store
