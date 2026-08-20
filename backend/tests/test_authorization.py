@@ -40,7 +40,7 @@ def _create_ticket(
         "/tickets",
         json={
             "title": title,
-            "type": "OUTAGE",
+            "type": "ELEVATOR_OUT_OF_SERVICE",
             "priority": "HIGH",
             "location_text": "Avenue Habib Bourguiba",
         },

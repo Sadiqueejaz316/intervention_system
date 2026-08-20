@@ -18,29 +18,26 @@ test('@screens capture every screen', async ({ page }) => {
   await page.screenshot({ path: `${OUT}/01-login.png` })
 
   await signIn(page, 'dispatcher@example.com', 'Dispatcher123!')
-  await expect(page.getByText(/\d+ tickets?/)).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Elevator operations' })).toBeVisible()
   await page.screenshot({ path: `${OUT}/02-tickets-dispatcher.png` })
 
-  await page.getByRole('link', { name: 'Contractors' }).click()
+  await page.getByRole('link', { name: /Technician/ }).click()
   await expect(page.getByText(/open job/).first()).toBeVisible()
   await page.screenshot({ path: `${OUT}/03-workers.png` })
 
   await page.getByRole('link', { name: 'Tickets' }).first().click()
-  await page.getByRole('link', { name: /Street light/ }).first().click()
+  await page.getByRole('link', { name: /trapped|ELV-/i }).first().click()
   await expect(page.getByRole('heading', { name: 'Timeline' })).toBeVisible()
-  // The recommendation list is the slowest panel; wait for a real score.
   await expect(page.getByRole('button', { name: /\d{2}/ }).first()).toBeVisible()
   await page.screenshot({ path: `${OUT}/04-ticket-detail-dispatcher.png` })
 
   await page.getByRole('button', { name: 'Sign out' }).click()
   await signIn(page, 'reporter@example.com', 'Reporter123!')
-  await expect(page.getByText(/\d+ tickets?/)).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Incidents' })).toBeVisible()
   await page.screenshot({ path: `${OUT}/05-tickets-reporter.png` })
 
-  await page.getByRole('link', { name: 'Report an issue' }).first().click()
-  await expect(page.getByLabel('What is wrong?')).toBeVisible()
-  await page.getByLabel('What is wrong?').fill('Water leaking in the stairwell')
-  await page.getByLabel('Details').fill('Third floor, getting worse since morning.')
+  await page.getByRole('link', { name: 'Report an incident' }).first().click()
+  await expect(page.getByText("What's wrong with the elevator?")).toBeVisible()
   await page.screenshot({ path: `${OUT}/06-new-ticket.png` })
 
   await page.getByRole('link', { name: 'Notifications' }).click()

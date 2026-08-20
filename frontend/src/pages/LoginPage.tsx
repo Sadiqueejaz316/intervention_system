@@ -46,7 +46,7 @@ export function LoginPage() {
   return (
     <AuthCard
       title="Sign in"
-      subtitle="Report an issue, dispatch a job, or pick up your next intervention."
+      subtitle="Report a trapped cabin, dispatch a technician, or pick up the next job."
       footer={
         <p className="text-sm text-muted">
           No account yet?{' '}

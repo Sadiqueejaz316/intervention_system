@@ -16,7 +16,7 @@ app = FastAPI(
     title=settings.APP_NAME,
     version="0.1.0",
     description=(
-        "Generic issue reporting and intervention system. "
+        "Elevator service dispatch for housing cooperatives. "
         "Domain-specific behaviour lives behind the domain adapter."
     ),
     responses={422: {"model": ErrorResponse}},

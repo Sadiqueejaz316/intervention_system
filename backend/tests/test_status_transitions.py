@@ -17,7 +17,7 @@ def _create_ticket(client: TestClient, reporter: User) -> dict:
         "/tickets",
         json={
             "title": "Street light out on 42B",
-            "type": "OUTAGE",
+            "type": "ELEVATOR_OUT_OF_SERVICE",
             "priority": "HIGH",
             "location_text": "Avenue Habib Bourguiba",
         },

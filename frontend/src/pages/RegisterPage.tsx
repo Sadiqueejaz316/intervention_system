@@ -7,13 +7,14 @@ import { useDomainConfig } from '@/hooks/queries'
 import { Alert, Button } from '@/components/ui'
 import { errorMessage } from '@/lib/errors'
 import { classes, humanise } from '@/lib/format'
+import { skillLabel } from '@/lib/domain'
 import { AuthCard } from './authShared'
 
 type SelfServiceRole = RegisterInput['role']
 
 const ROLE_CHOICES: { value: SelfServiceRole; description: string }[] = [
-  { value: 'REPORTER', description: 'Report issues and follow your own tickets.' },
-  { value: 'CONTRACTOR', description: 'Take jobs, start work and resolve them.' },
+  { value: 'REPORTER', description: 'Report elevator incidents in your building.' },
+  { value: 'CONTRACTOR', description: 'Take elevator jobs, start work and resolve them.' },
 ]
 
 export function RegisterPage() {
@@ -63,7 +64,7 @@ export function RegisterPage() {
   return (
     <AuthCard
       title="Create an account"
-      subtitle="Sign up to report issues or to take on jobs in the field."
+        subtitle="Sign up to report elevator incidents or to take jobs in the field."
       footer={
         <p className="text-sm text-muted">
           Already registered?{' '}
@@ -177,7 +178,7 @@ export function RegisterPage() {
                       : 'bg-canvas text-muted ring-line hover:text-ink',
                   )}
                 >
-                  {humanise(skill)}
+                  {skillLabel(config, skill)}
                 </button>
               ))}
             </div>

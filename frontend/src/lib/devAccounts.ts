@@ -7,6 +7,6 @@
 export const DEV_ACCOUNTS = [
   { label: 'Reporter', email: 'reporter@example.com', password: 'Reporter123!' },
   { label: 'Dispatcher', email: 'dispatcher@example.com', password: 'Dispatcher123!' },
-  { label: 'Contractor', email: 'contractor1@example.com', password: 'Contractor123!' },
+  { label: 'Technician', email: 'contractor1@example.com', password: 'Contractor123!' },
   { label: 'Admin', email: 'admin@example.com', password: 'Admin123!' },
 ]

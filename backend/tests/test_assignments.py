@@ -17,7 +17,7 @@ def _create_ticket(
     client: TestClient,
     reporter: User,
     *,
-    type: str = "OUTAGE",
+    type: str = "ELEVATOR_OUT_OF_SERVICE",
     priority: str = "HIGH",
 ) -> dict:
     response = client.post(
@@ -219,7 +219,7 @@ def test_only_workers_can_be_assigned(
     response = _assign(client, ticket["id"], reporter, dispatcher)
 
     assert response.status_code == 422
-    assert "not a Contractor" in response.json()["detail"]
+    assert "not a Elevator Technician" in response.json()["detail"]
 
 
 def test_assigning_an_unknown_worker_returns_404(
@@ -487,7 +487,7 @@ def test_recommendations_rank_the_skilled_nearby_worker_first(
         latitude=36.81,
         longitude=10.19,
     )
-    ticket = _create_ticket(client, reporter, type="OUTAGE")
+    ticket = _create_ticket(client, reporter, type="LIGHTING_FAILURE")
 
     response = client.get(
         f"/tickets/{ticket['id']}/recommendations",

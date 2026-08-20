@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID
 
-from pydantic import AliasChoices, BaseModel, ConfigDict, Field
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field, computed_field
 
 from app.core.enums import TicketPriority, TicketStatus
 from app.schemas.user import WorkerSummary
@@ -48,6 +48,11 @@ class TicketRead(BaseModel):
     #: Worker holding the current assignment, if any.
     assigned_worker: WorkerSummary | None = None
 
+    @computed_field
+    @property
+    def is_emergency(self) -> bool:
+        return bool(self.metadata.get("is_emergency"))
+
     @classmethod
     def from_ticket(cls, ticket: Any, worker: Any | None = None) -> "TicketRead":
         read = cls.model_validate(ticket)
@@ -55,6 +60,16 @@ class TicketRead(BaseModel):
             read.assigned_worker = WorkerSummary.model_validate(worker)
 
         return read
+
+
+class TicketStats(BaseModel):
+    total: int
+    emergency: int
+    open: int
+    assigned: int
+    in_progress: int
+    resolved: int
+    closed: int
 
 
 class TicketHistoryRead(BaseModel):

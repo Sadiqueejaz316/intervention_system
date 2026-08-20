@@ -8,6 +8,7 @@ import type {
   TicketCreateInput,
   TicketHistoryEntry,
   TicketQuery,
+  TicketStats,
   TicketStatus,
   TokenResponse,
   User,
@@ -36,6 +37,8 @@ export const auth = {
 export const tickets = {
   list: (query: TicketQuery = {}) =>
     request<Ticket[]>('/tickets', { query: { ...query } }),
+
+  stats: () => request<TicketStats>('/tickets/stats'),
 
   get: (id: string) => request<Ticket>(`/tickets/${id}`),
 

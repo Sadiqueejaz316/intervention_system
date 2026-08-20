@@ -26,6 +26,7 @@ import {
 } from '@/components/ui'
 import { errorMessage } from '@/lib/errors'
 import { formatDateTime, humanise } from '@/lib/format'
+import { isEmergency, issueTypeLabel, metaText, skillLabel } from '@/lib/domain'
 import {
   useAcceptAssignment,
   useChangeStatus,
@@ -81,6 +82,7 @@ export function TicketDetailPage() {
 
   if (!ticket || !user) return null
 
+  const emergency = isEmergency(ticket)
   const moves = nextStatuses(ticket, config?.status_transitions).filter((status) =>
     canChangeStatusTo(user, ticket, status),
   )
@@ -100,10 +102,15 @@ export function TicketDetailPage() {
           ← Back to tickets
         </ButtonLink>
         <PageHeader
-          title={ticket.title}
+          title={emergency ? `🚨 ${ticket.title}` : ticket.title}
           subtitle={`Reported ${formatDateTime(ticket.created_at)}`}
           action={
-            <div className="flex gap-1.5">
+            <div className="flex flex-wrap gap-1.5">
+              {emergency && (
+                <span className="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-800 ring-1 ring-inset ring-red-200">
+                  Person trapped
+                </span>
+              )}
               <PriorityBadge priority={ticket.priority} />
               <StatusBadge status={ticket.status} />
             </div>
@@ -124,11 +131,31 @@ export function TicketDetailPage() {
 
             <dl className="grid gap-3 border-t border-line pt-4 text-sm sm:grid-cols-2">
               <Detail label="Type">
-                <Chip>{humanise(ticket.type)}</Chip>
+                <Chip>{issueTypeLabel(config, ticket.type)}</Chip>
               </Detail>
-              <Detail label="Location">
-                {ticket.location_text ?? <span className="text-muted">Not given</span>}
+              <Detail label="Building">
+                {metaText(ticket, 'building_name') ?? (
+                  <span className="text-muted">Not given</span>
+                )}
               </Detail>
+              <Detail label="Elevator">
+                {metaText(ticket, 'elevator_id') ?? (
+                  <span className="text-muted">Not given</span>
+                )}
+              </Detail>
+              <Detail label="Known floor">
+                {metaText(ticket, 'floor') ?? <span className="text-muted">Unknown</span>}
+              </Detail>
+              {emergency && (
+                <Detail label="People trapped">
+                  {metaText(ticket, 'people_trapped') ?? '—'}
+                </Detail>
+              )}
+              {emergency && (
+                <Detail label="Communication">
+                  {metaText(ticket, 'communication_possible') ?? 'Unknown'}
+                </Detail>
+              )}
               <Detail label={config?.worker_label ?? 'Assigned to'}>
                 {ticket.assigned_worker ? (
                   <span>
@@ -136,7 +163,7 @@ export function TicketDetailPage() {
                     {ticket.assigned_worker.skills.length > 0 && (
                       <span className="text-muted">
                         {' '}
-                        · {ticket.assigned_worker.skills.map(humanise).join(', ')}
+                        · {ticket.assigned_worker.skills.map((skill) => skillLabel(config, skill)).join(', ')}
                       </span>
                     )}
                   </span>
@@ -171,7 +198,7 @@ export function TicketDetailPage() {
                     maxLength={2000}
                     value={comment}
                     onChange={(event) => setComment(event.target.value)}
-                    placeholder="On site, replacing the lamp"
+                    placeholder="On site, isolating the cabin"
                   />
                 </div>
               )}

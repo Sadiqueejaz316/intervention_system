@@ -7,7 +7,8 @@ import {
   PageHeader,
   Skeleton,
 } from '@/components/ui'
-import { classes, humanise } from '@/lib/format'
+import { classes } from '@/lib/format'
+import { skillLabel } from '@/lib/domain'
 import { useDomainConfig, useWorkers } from '@/hooks/queries'
 
 /** Dispatcher view: who is free, what they can do, and how loaded they are. */
@@ -45,7 +46,7 @@ export function WorkersPage() {
             <option value="">Any skill</option>
             {(config?.skill_vocabulary ?? []).map((value) => (
               <option key={value} value={value}>
-                {humanise(value)}
+                {skillLabel(config, value)}
               </option>
             ))}
           </select>
@@ -111,7 +112,9 @@ export function WorkersPage() {
 
             <div className="mt-3 flex flex-wrap items-center gap-1.5">
               {worker.skills.length > 0 ? (
-                worker.skills.map((value) => <Chip key={value}>{humanise(value)}</Chip>)
+                worker.skills.map((value) => (
+                  <Chip key={value}>{skillLabel(config, value)}</Chip>
+                ))
               ) : (
                 <span className="text-xs text-muted">No skills recorded</span>
               )}

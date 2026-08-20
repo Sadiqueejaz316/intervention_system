@@ -18,8 +18,8 @@ export function MyJobsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="My jobs"
-        subtitle="Jobs assigned to you, most urgent first."
+        title="My elevator jobs"
+        subtitle="Jobs assigned to you, emergencies first."
         action={
           <div className="flex rounded-lg border border-line bg-surface p-0.5">
             {[

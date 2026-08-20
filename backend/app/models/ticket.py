@@ -88,3 +88,6 @@ class Ticket(Base, TimestampMixin):
 
 #: Queue ordering shared by every ticket listing: CRITICAL first, LOW last.
 PRIORITY_ORDER = case(PRIORITY_RANK, value=Ticket.priority, else_=99)
+
+#: Entrapment and other adapter-flagged emergencies sit above ordinary CRITICAL work.
+EMERGENCY_ORDER = case((Ticket.meta["is_emergency"].astext == "true", 0), else_=1)

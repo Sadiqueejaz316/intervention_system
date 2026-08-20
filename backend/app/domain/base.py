@@ -79,6 +79,14 @@ class DomainAdapter(ABC):
     #: Metadata keys a ticket must carry, per issue type.
     required_metadata: dict[str, list[str]] = {}
 
+    #: Human labels for issue types and skills. Missing keys fall back to the raw value.
+    issue_type_labels: dict[str, str] = {}
+    issue_type_descriptions: dict[str, str] = {}
+    skill_labels: dict[str, str] = {}
+
+    #: Issue types that the adapter treats as emergencies (e.g. a trapped person).
+    emergency_types: frozenset[str] = frozenset()
+
     # Recommendation weights, summing to 100.
     skill_weight: int = 50
     availability_weight: int = 25
@@ -100,6 +108,13 @@ class DomainAdapter(ABC):
     def allowed_transitions(self, current_status: str) -> list[str]:
         return list(self.status_transitions.get(current_status, []))
 
+    def is_emergency_type(self, issue_type: str | None) -> bool:
+        return bool(issue_type) and issue_type in self.emergency_types
+
+    def prepare_ticket(self, ticket_data: dict[str, Any]) -> dict[str, Any]:
+        """Normalise a create payload before validation. Override in a niche adapter."""
+        return ticket_data
+
     def validate_ticket(self, ticket_data: dict[str, Any]) -> list[str]:
         """Return human-readable problems; an empty list means the ticket is valid."""
         errors: list[str] = []
@@ -117,6 +132,22 @@ class DomainAdapter(ABC):
                 errors.append(f"Metadata field '{key}' is required for {issue_type}.")
 
         return errors
+
+    def describe_issue_types(self) -> list[dict[str, Any]]:
+        """Issue types as the frontend consumes them: value, label, emergency."""
+        described: list[dict[str, Any]] = []
+        for issue_type in self.issue_types:
+            described.append(
+                {
+                    "value": issue_type,
+                    "label": self.issue_type_labels.get(
+                        issue_type, issue_type.replace("_", " ").title()
+                    ),
+                    "description": self.issue_type_descriptions.get(issue_type, ""),
+                    "emergency": self.is_emergency_type(issue_type),
+                }
+            )
+        return described
 
     def rank_workers(
         self,
@@ -235,8 +266,9 @@ class DomainAdapter(ABC):
         return {
             "domain_name": self.domain_name,
             "worker_label": self.worker_label,
-            "issue_types": self.issue_types,
+            "issue_types": self.describe_issue_types(),
             "skill_vocabulary": self.skill_vocabulary,
+            "skill_labels": self.skill_labels,
             "status_transitions": self.status_transitions,
             "required_metadata": self.required_metadata,
             "required_skills_by_type": {

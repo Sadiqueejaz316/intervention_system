@@ -14,7 +14,7 @@ from app.core.errors import (
 )
 from app.domain.base import DomainAdapter, WorkerCandidate, WorkerScore
 from app.models.assignment import Assignment
-from app.models.ticket import PRIORITY_ORDER, Ticket
+from app.models.ticket import EMERGENCY_ORDER, PRIORITY_ORDER, Ticket
 from app.models.user import User
 from app.schemas.assignment import AssignmentCreate
 from app.services import history_service, notification_service
@@ -127,7 +127,7 @@ def list_worker_tickets(
     if active_only:
         query = query.where(Ticket.status.in_(ACTIVE_STATUSES))
 
-    query = query.order_by(PRIORITY_ORDER, Ticket.created_at)
+    query = query.order_by(EMERGENCY_ORDER, PRIORITY_ORDER, Ticket.created_at)
 
     return list(db.execute(query).scalars().all())
 

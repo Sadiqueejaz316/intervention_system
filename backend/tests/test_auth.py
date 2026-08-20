@@ -239,7 +239,7 @@ def test_the_database_role_wins_over_the_token_claim(
     """A token claiming DISPATCHER gets a reporter nowhere: the role is re-read."""
     ticket = client.post(
         "/tickets",
-        json={"title": "Street light out", "type": "OUTAGE"},
+        json={"title": "Elevator out on ELV-01", "type": "ELEVATOR_OUT_OF_SERVICE"},
         headers=auth(reporter),
     ).json()
 

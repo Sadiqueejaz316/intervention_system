@@ -1,10 +1,7 @@
-from dataclasses import dataclass
-from uuid import uuid4
-
 from fastapi.testclient import TestClient
 
-from app.domain.base import WorkerCandidate
 from app.domain.current import get_domain_adapter
+from app.domain.elevator import PERSON_TRAPPED, ElevatorDomainAdapter
 
 
 def test_health_reports_domain_and_database(client: TestClient) -> None:
@@ -13,17 +10,26 @@ def test_health_reports_domain_and_database(client: TestClient) -> None:
     assert response.status_code == 200
     assert response.json()["status"] == "ok"
     assert response.json()["database"] == "connected"
+    assert "Elevator" in response.json()["domain"]
 
 
-def test_domain_config_exposes_terminology(client: TestClient) -> None:
+def test_domain_config_exposes_elevator_terminology(client: TestClient) -> None:
     response = client.get("/domain/config")
 
     assert response.status_code == 200
     body = response.json()
-    assert body["domain_name"] == "Generic Intervention"
-    assert body["worker_label"] == "Contractor"
-    assert body["issue_types"] == ["GENERAL", "EQUIPMENT", "DAMAGE", "OUTAGE"]
+    assert body["domain_name"] == "Elevator Service — Housing Co-ops"
+    assert body["worker_label"] == "Elevator Technician"
+    values = [item["value"] for item in body["issue_types"]]
+    assert PERSON_TRAPPED in values
+    trapped = next(
+        item for item in body["issue_types"] if item["value"] == PERSON_TRAPPED
+    )
+    assert trapped["emergency"] is True
+    assert trapped["label"]
     assert body["status_transitions"]["OPEN"] == ["ASSIGNED"]
+    assert "ELEVATOR_EMERGENCY" in body["skill_vocabulary"]
+    assert body["metadata_hint"]["emergency_type"] == PERSON_TRAPPED
 
 
 def test_issue_types_endpoint(client: TestClient) -> None:
@@ -42,47 +48,5 @@ def test_transitions_follow_the_workflow() -> None:
     assert not adapter.can_transition("CLOSED", "OPEN")
 
 
-@dataclass
-class FakeTicket:
-    type: str = "OUTAGE"
-    priority: str = "HIGH"
-    latitude: float | None = 36.80
-    longitude: float | None = 10.18
-
-
-def test_rank_workers_prefers_skilled_available_and_close() -> None:
-    adapter = get_domain_adapter()
-
-    skilled = WorkerCandidate(
-        id=uuid4(),
-        name="Skilled and nearby",
-        skills=["ELECTRICAL"],
-        is_available=True,
-        latitude=36.81,
-        longitude=10.19,
-        active_ticket_count=0,
-    )
-    unskilled = WorkerCandidate(
-        id=uuid4(),
-        name="Wrong skill",
-        skills=["MECHANICAL"],
-        is_available=True,
-        latitude=36.81,
-        longitude=10.19,
-        active_ticket_count=0,
-    )
-    busy = WorkerCandidate(
-        id=uuid4(),
-        name="Skilled but unavailable and loaded",
-        skills=["ELECTRICAL"],
-        is_available=False,
-        latitude=36.81,
-        longitude=10.19,
-        active_ticket_count=5,
-    )
-
-    ranked = adapter.rank_workers(FakeTicket(), [unskilled, busy, skilled])
-
-    assert [result.worker_id for result in ranked][0] == skilled.id
-    assert ranked[0].score > ranked[1].score > ranked[2].score
-    assert "Required skill matched: ELECTRICAL" in ranked[0].reasons
+def test_active_adapter_is_elevator() -> None:
+    assert isinstance(get_domain_adapter(), ElevatorDomainAdapter)
