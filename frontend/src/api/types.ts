@@ -56,6 +56,7 @@ export interface Ticket {
   created_at: string
   updated_at: string
   assigned_worker: WorkerSummary | null
+  is_emergency?: boolean
 }
 
 export interface TicketHistoryEntry {
@@ -100,17 +101,47 @@ export interface Notification {
   created_at: string
 }
 
+export interface IssueTypeConfig {
+  value: string
+  label: string
+  emergency: boolean
+  description: string
+}
+
 export interface DomainConfig {
   domain_name: string
   worker_label: string
-  issue_types: string[]
+  issue_types: IssueTypeConfig[]
   skill_vocabulary: string[]
+  skill_labels: Record<string, string>
   status_transitions: Record<string, string[]>
   required_metadata: Record<string, string[]>
   required_skills_by_type: Record<string, string[]>
   priorities: TicketPriority[]
   statuses: TicketStatus[]
-  metadata_hint: Record<string, unknown>
+  metadata_hint: {
+    buildings?: BuildingHint[]
+    elevator_ids?: string[]
+    emergency_type?: string
+    [key: string]: unknown
+  }
+}
+
+export interface BuildingHint {
+  name: string
+  address?: string
+  latitude?: number
+  longitude?: number
+}
+
+export interface TicketStats {
+  total: number
+  emergency: number
+  open: number
+  assigned: number
+  in_progress: number
+  resolved: number
+  closed: number
 }
 
 export interface TokenResponse {

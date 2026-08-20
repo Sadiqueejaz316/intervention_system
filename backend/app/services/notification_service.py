@@ -38,6 +38,29 @@ def create_notification(
     return notification
 
 
+def notify_new_ticket(
+    db: Session,
+    *,
+    ticket: Ticket,
+    actor_id: UUID | None,
+) -> list[Notification]:
+    """Dispatchers hear about a new emergency immediately. Ordinary reports wait."""
+    if not _is_emergency(ticket):
+        return []
+
+    planned = [
+        (
+            dispatcher_id,
+            "🚨 EMERGENCY: person trapped",
+            _emergency_message(ticket),
+            NotificationType.ESCALATION,
+        )
+        for dispatcher_id in dispatcher_ids(db)
+    ]
+
+    return _dispatch(db, ticket, planned, actor_id)
+
+
 def notify_status_change(
     db: Session,
     *,
@@ -78,15 +101,26 @@ def notify_assignment(
     actor_id: UUID | None,
 ) -> list[Notification]:
     """Alert the new worker, anyone replaced, and the reporter."""
-    location = ticket.location_text or "an unspecified location"
+    location = _incident_where(ticket)
+    emergency = _is_emergency(ticket)
+    worker_title = (
+        f"🚨 EMERGENCY job: {ticket.title}" if emergency else f"New job: {ticket.title}"
+    )
+    worker_message = (
+        _emergency_message(ticket)
+        if emergency
+        else (
+            f"You have been assigned a {ticket.priority} priority "
+            f"{ticket.type} job at {location}."
+        )
+    )
 
     planned: list[tuple[UUID | None, str, str, NotificationType]] = [
         (
             worker.id,
-            f"New job: {ticket.title}",
-            f"You have been assigned a {ticket.priority} priority "
-            f"{ticket.type} job at {location}.",
-            NotificationType.ASSIGNMENT,
+            worker_title,
+            worker_message,
+            NotificationType.ESCALATION if emergency else NotificationType.ASSIGNMENT,
         ),
         (
             previous_worker_id,
@@ -217,3 +251,25 @@ def dispatcher_ids(db: Session) -> list[UUID]:
     query = select(User.id).where(User.role == UserRole.DISPATCHER.value)
 
     return list(db.execute(query).scalars().all())
+
+
+def _is_emergency(ticket: Ticket) -> bool:
+    return bool(ticket.meta.get("is_emergency"))
+
+
+def _incident_where(ticket: Ticket) -> str:
+    meta = ticket.meta or {}
+    building = meta.get("building_name")
+    elevator = meta.get("elevator_id")
+    if building and elevator:
+        return f"{building} — {elevator}"
+    return ticket.location_text or "an unspecified location"
+
+
+def _emergency_message(ticket: Ticket) -> str:
+    meta = ticket.meta or {}
+    people = meta.get("people_trapped")
+    elevator = meta.get("elevator_id") or "the elevator"
+    building = meta.get("building_name") or "the building"
+    people_bit = f"{people} people" if people else "People"
+    return f"🚨 EMERGENCY: {people_bit} trapped in elevator {elevator} at {building}."

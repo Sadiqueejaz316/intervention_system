@@ -10,7 +10,7 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    APP_NAME: str = "Issue Reporting & Intervention System"
+    APP_NAME: str = "Elevator Service — Housing Co-ops"
     ENVIRONMENT: str = "development"
 
     DATABASE_URL: str = (

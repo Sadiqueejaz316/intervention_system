@@ -3,7 +3,7 @@ from uuid import UUID
 from sqlalchemy import Select, select
 from sqlalchemy.orm import Session
 
-from app.core.enums import HistoryAction, TicketStatus
+from app.core.enums import HistoryAction, TicketPriority, TicketStatus
 from app.core.errors import (
     ConflictError,
     DomainValidationError,
@@ -11,7 +11,7 @@ from app.core.errors import (
     NotFoundError,
 )
 from app.domain.base import DomainAdapter
-from app.models.ticket import PRIORITY_ORDER, Ticket
+from app.models.ticket import EMERGENCY_ORDER, PRIORITY_ORDER, Ticket
 from app.models.ticket_history import TicketHistory
 from app.schemas.ticket import TicketCreate, TicketStatusUpdate
 from app.services import assignment_service, history_service, notification_service
@@ -36,21 +36,26 @@ def create_ticket(
 
     `reporter_id` comes from the authenticated caller, never from the payload.
     """
-    errors = adapter.validate_ticket(data.model_dump(mode="json"))
+    payload = adapter.prepare_ticket(data.model_dump(mode="json"))
+    errors = adapter.validate_ticket(payload)
     if errors:
         raise DomainValidationError(" ".join(errors))
 
+    metadata = payload.get("metadata") or {}
+    is_emergency = bool(metadata.get("is_emergency"))
+    priority = str(payload.get("priority") or TicketPriority.MEDIUM.value)
+
     ticket = Ticket(
-        title=data.title,
-        description=data.description,
-        type=data.type,
-        priority=data.priority.value,
+        title=payload["title"],
+        description=payload.get("description"),
+        type=payload["type"],
+        priority=priority,
         status=TicketStatus.OPEN.value,
         reporter_id=reporter_id,
-        location_text=data.location_text,
-        latitude=data.latitude,
-        longitude=data.longitude,
-        meta=data.metadata,
+        location_text=payload.get("location_text"),
+        latitude=payload.get("latitude"),
+        longitude=payload.get("longitude"),
+        meta=metadata,
     )
 
     try:
@@ -63,8 +68,10 @@ def create_ticket(
             action=HistoryAction.TICKET_CREATED,
             user_id=reporter_id,
             new_status=TicketStatus.OPEN.value,
-            comment="Ticket created",
+            comment="Emergency ticket created" if is_emergency else "Ticket created",
+            metadata={"emergency": True} if is_emergency else None,
         )
+        notification_service.notify_new_ticket(db, ticket=ticket, actor_id=reporter_id)
 
         db.commit()
     except Exception:
@@ -202,6 +209,46 @@ def list_tickets(
             current.c.contractor_id == assigned_to,
         )
 
-    query = query.order_by(PRIORITY_ORDER, Ticket.created_at).limit(limit).offset(offset)
+    query = query.order_by(EMERGENCY_ORDER, PRIORITY_ORDER, Ticket.created_at).limit(
+        limit
+    ).offset(offset)
 
     return list(db.execute(query).scalars().all())
+
+
+def ticket_stats(
+    db: Session,
+    *,
+    reporter_id: UUID | None = None,
+    assigned_to: UUID | None = None,
+) -> dict[str, int]:
+    """Counts for the operations dashboard, scoped the same way as the queue."""
+    tickets = list_tickets(
+        db,
+        reporter_id=reporter_id,
+        assigned_to=assigned_to,
+        limit=500,
+        offset=0,
+    )
+    counts = {
+        "total": len(tickets),
+        "emergency": sum(1 for ticket in tickets if ticket.meta.get("is_emergency")),
+        "open": 0,
+        "assigned": 0,
+        "in_progress": 0,
+        "resolved": 0,
+        "closed": 0,
+    }
+    key_by_status = {
+        TicketStatus.OPEN.value: "open",
+        TicketStatus.ASSIGNED.value: "assigned",
+        TicketStatus.IN_PROGRESS.value: "in_progress",
+        TicketStatus.RESOLVED.value: "resolved",
+        TicketStatus.CLOSED.value: "closed",
+    }
+    for ticket in tickets:
+        key = key_by_status.get(ticket.status)
+        if key is not None:
+            counts[key] += 1
+
+    return counts

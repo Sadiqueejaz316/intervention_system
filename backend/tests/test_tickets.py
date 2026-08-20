@@ -11,14 +11,14 @@ from tests.conftest import auth
 
 def _payload(**overrides: object) -> dict[str, object]:
     payload: dict[str, object] = {
-        "title": "Broken ventilator in ICU",
-        "description": "Unit stopped responding during the night shift.",
-        "type": "EQUIPMENT",
+        "title": "Landing doors stuck on ELV-02",
+        "description": "Doors reverse on every close attempt.",
+        "type": "DOOR_MALFUNCTION",
         "priority": "CRITICAL",
-        "location_text": "Building A, ICU",
+        "location_text": "Building A, ELV-02",
         "latitude": 36.8065,
         "longitude": 10.1815,
-        "metadata": {"equipment_id": "VENT-104", "department": "ICU"},
+        "metadata": {"building_name": "Building A", "elevator_id": "ELV-02"},
     }
     payload.update(overrides)
 
@@ -32,7 +32,7 @@ def test_create_ticket_starts_open(client: TestClient, reporter: User) -> None:
     body = response.json()
     assert body["status"] == "OPEN"
     assert body["priority"] == "CRITICAL"
-    assert body["metadata"]["equipment_id"] == "VENT-104"
+    assert body["metadata"]["elevator_id"] == "ELV-02"
 
 
 def test_create_ticket_records_the_authenticated_reporter(

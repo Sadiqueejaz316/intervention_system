@@ -45,8 +45,8 @@ async function ensureContractor(page: Page) {
   await page.getByLabel('Full name').fill(CONTRACTOR.name)
   await page.getByLabel('Email').fill(CONTRACTOR.email)
   await page.getByLabel('Password').fill(CONTRACTOR.password)
-  await page.getByRole('radio', { name: /Contractor/ }).check()
-  await page.getByRole('button', { name: 'Electrical', exact: true }).click()
+  await page.getByRole('radio', { name: /Elevator Technician|Technician/ }).check()
+  await page.getByRole('button', { name: 'Elevator emergency', exact: true }).click()
   await page.getByRole('button', { name: 'Create account' }).click()
 
   const alreadyExists = page.getByRole('alert')
@@ -61,32 +61,34 @@ async function ensureContractor(page: Page) {
   await expect(page).toHaveURL(/\/tickets/)
 }
 
-test('a ticket travels from report to closure', async ({ page }) => {
-  const title = `Street light out on 42B (${Date.now()})`
+test('a trapped-person ticket travels from report to closure', async ({ page }) => {
+  const title = `People trapped in ELV-02 (${Date.now()})`
   let ticketUrl = ''
 
-  await test.step('a contractor signs up for field work', async () => {
+  await test.step('a technician signs up for field work', async () => {
     await ensureContractor(page)
     await expect(page.getByRole('link', { name: 'My jobs' })).toBeVisible()
     await signOut(page)
   })
 
-  await test.step('the reporter files an issue', async () => {
+  await test.step('the reporter files an entrapment', async () => {
     await signIn(page, SEEDED.reporter)
 
-    await page.getByRole('link', { name: 'Report an issue' }).first().click()
-    await page.getByLabel('What is wrong?').fill(title)
-    await page.getByLabel('Details').fill('Dark since last night.')
-    await page.getByLabel('Type').selectOption('OUTAGE')
-    await page.getByRole('button', { name: 'High', exact: true }).click()
-    await page.getByLabel('Where').fill('Avenue Habib Bourguiba')
-    await page.getByRole('button', { name: 'Submit report' }).click()
+    await page.getByRole('link', { name: 'Report an incident' }).first().click()
+    await page.getByRole('radio', { name: /PERSON TRAPPED/i }).check()
+    await page.getByLabel('How many people?').fill('2')
+    await page.getByLabel('Which building?').selectOption('Building A')
+    await page.getByLabel('Which elevator?').selectOption('ELV-02')
+    await page.getByLabel('Known floor?').fill('7')
+    await page.getByLabel('Short summary').fill(title)
+    await page.getByLabel('Additional information').fill('Can hear voices.')
+    await page.getByRole('button', { name: 'Submit emergency' }).click()
 
-    await expect(page.getByRole('heading', { name: title })).toBeVisible()
-    await expect(page.getByText('Open', { exact: true }).first()).toBeVisible()
+    await expect(page.getByRole('heading', { name: new RegExp(title) })).toBeVisible()
+    await expect(page.getByText('Person trapped', { exact: true }).first()).toBeVisible()
+    await expect(page.getByText('Critical', { exact: true }).first()).toBeVisible()
     ticketUrl = page.url()
 
-    // A reporter has no say in who does the work.
     await expect(page.getByRole('button', { name: 'Assign', exact: true })).toHaveCount(0)
     await signOut(page)
   })
@@ -152,7 +154,7 @@ test('a ticket travels from report to closure', async ({ page }) => {
 test('a reporter is kept out of the dispatcher screens', async ({ page }) => {
   await signIn(page, SEEDED.reporter)
 
-  await expect(page.getByRole('link', { name: 'Contractors' })).toHaveCount(0)
+  await expect(page.getByRole('link', { name: /Technician/ })).toHaveCount(0)
   await expect(page.getByRole('link', { name: 'My jobs' })).toHaveCount(0)
 
   await page.goto('/workers')
@@ -166,7 +168,7 @@ test('an unauthenticated visitor is sent to sign in', async ({ page }) => {
 
 test('a deep link is remembered, but only until someone signs out', async ({ page }) => {
   await signIn(page, SEEDED.dispatcher)
-  const ticket = page.getByRole('link', { name: /Street light/ }).first()
+  const ticket = page.getByRole('link', { name: /trapped|ELV-/i }).first()
   await ticket.click()
   const ticketUrl = page.url()
 
@@ -190,6 +192,6 @@ test('a deep link is remembered, but only until someone signs out', async ({ pag
     await page.getByRole('button', { name: 'Sign in' }).click()
 
     await expect(page).toHaveURL(/\/tickets$/)
-    await expect(page.getByRole('heading', { name: 'Tickets' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Incidents' })).toBeVisible()
   })
 })

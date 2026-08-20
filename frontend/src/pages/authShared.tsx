@@ -29,13 +29,12 @@ export function AuthCard({
 
         <div className="max-w-md">
           <h2 className="text-3xl font-semibold leading-tight">
-            From report to resolution, with everyone in the loop.
+            Elevator incidents, from the cabin to closure.
           </h2>
           <p className="mt-3 text-white/80">
-            Issues are reported, queued by urgency, dispatched to the right
-            {' '}
-            {(config?.worker_label ?? 'worker').toLowerCase()}, and tracked through to
-            closure — with a full timeline behind every step.
+            Housing co-ops report stuck doors and trapped residents. Dispatchers send the
+            nearest certified {(config?.worker_label ?? 'technician').toLowerCase()}
+            {' '}and follow every job through to close.
           </p>
 
           <ol className="mt-8 space-y-2 text-sm text-white/85">

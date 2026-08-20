@@ -13,6 +13,7 @@ from app.schemas.ticket import (
     TicketCreate,
     TicketHistoryRead,
     TicketRead,
+    TicketStats,
     TicketStatusUpdate,
 )
 from app.services import assignment_service, ticket_service
@@ -84,6 +85,16 @@ def list_tickets(
     return [
         TicketRead.from_ticket(ticket, workers.get(ticket.id)) for ticket in tickets
     ]
+
+
+@router.get(
+    "/stats",
+    response_model=TicketStats,
+    summary="Operations counts for the signed-in role",
+)
+def get_ticket_stats(db: DbSession, current_user: CurrentUser) -> TicketStats:
+    scope = _visible_scope(current_user, reporter_id=None)
+    return TicketStats(**ticket_service.ticket_stats(db, **scope))
 
 
 @router.get(

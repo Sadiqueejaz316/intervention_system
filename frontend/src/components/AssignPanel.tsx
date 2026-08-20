@@ -4,7 +4,9 @@ import { ApiError } from '@/api/client'
 import type { Ticket } from '@/api/types'
 import { Alert, Button, Chip, Skeleton } from '@/components/ui'
 import { errorMessage } from '@/lib/errors'
-import { classes, humanise } from '@/lib/format'
+import { isEmergency } from '@/lib/domain'
+import { classes } from '@/lib/format'
+import { skillLabel } from '@/lib/domain'
 import { useAssignTicket, useDomainConfig, useRecommendations } from '@/hooks/queries'
 
 /**
@@ -29,6 +31,7 @@ export function AssignPanel({ ticket }: { ticket: Ticket }) {
   const workerLabel = config?.worker_label ?? 'worker'
   const requiredSkills = config?.required_skills_by_type[ticket.type] ?? []
   const isReassignment = ticket.assigned_worker !== null
+  const emergency = isEmergency(ticket)
 
   function submit() {
     if (!selected) return
@@ -52,7 +55,7 @@ export function AssignPanel({ ticket }: { ticket: Ticket }) {
         <p className="mt-0.5 text-sm text-muted">
           Ranked by skill match, availability, distance and current workload.
           {requiredSkills.length > 0 && (
-            <> Usually needs {requiredSkills.map(humanise).join(', ')}.</>
+            <> Usually needs {requiredSkills.map((skill) => skillLabel(config, skill)).join(', ')}.</>
           )}
         </p>
       </header>
@@ -101,7 +104,9 @@ export function AssignPanel({ ticket }: { ticket: Ticket }) {
                     {isCurrent && <Chip>On the job</Chip>}
                     {mismatch && (
                       <span className="rounded-md bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-800 ring-1 ring-inset ring-amber-200">
-                        Skill mismatch
+                        {emergency
+                          ? 'Recommended technician does not have the required emergency skill.'
+                          : 'Skill mismatch'}
                       </span>
                     )}
                     <span className="text-sm font-semibold tabular-nums text-brand-700">

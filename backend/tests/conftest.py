@@ -130,7 +130,7 @@ def contractor(db: Session) -> User:
         db,
         name="Ahmed Contractor",
         role=UserRole.CONTRACTOR,
-        skills=["ELECTRICAL", "MECHANICAL"],
+        skills=["ELEVATOR_GENERAL", "ELEVATOR_EMERGENCY", "ELECTRICAL"],
         latitude=36.81,
         longitude=10.19,
     )

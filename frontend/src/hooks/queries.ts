@@ -22,6 +22,7 @@ export const keys = {
   myTickets: (activeOnly: boolean) => ['workers', 'me', 'tickets', activeOnly] as const,
   notifications: (unreadOnly: boolean) => ['notifications', unreadOnly] as const,
   unreadCount: ['notifications', 'unread-count'] as const,
+  stats: ['tickets', 'stats'] as const,
 }
 
 /** The domain adapter decides terminology and issue types; it changes rarely. */
@@ -37,6 +38,14 @@ export function useTickets(query: TicketQuery) {
   return useQuery({
     queryKey: keys.tickets(query),
     queryFn: () => tickets.list(query),
+  })
+}
+
+export function useTicketStats(enabled: boolean) {
+  return useQuery({
+    queryKey: keys.stats,
+    queryFn: tickets.stats,
+    enabled,
   })
 }
 
@@ -103,6 +112,7 @@ export function useCreateTicket(
     ...options,
     onSuccess: (...args) => {
       void queryClient.invalidateQueries({ queryKey: ['tickets'] })
+      void queryClient.invalidateQueries({ queryKey: keys.stats })
       options?.onSuccess?.(...args)
     },
   })
@@ -125,6 +135,7 @@ function useTicketMutation<TVariables>(
       void queryClient.invalidateQueries({ queryKey: keys.history(ticketId) })
       void queryClient.invalidateQueries({ queryKey: keys.recommendations(ticketId) })
       void queryClient.invalidateQueries({ queryKey: ['tickets'] })
+      void queryClient.invalidateQueries({ queryKey: keys.stats })
       void queryClient.invalidateQueries({ queryKey: ['workers'] })
       void queryClient.invalidateQueries({ queryKey: ['notifications'] })
     },
